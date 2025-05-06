@@ -44,8 +44,9 @@ class ImmersiveActivity : AppSystemActivity() {
   private companion object {
     const val TAG = "LiveKitStereoViewer"
 
-    const val LK_SERVER_URL = "wss://test-kfa415ta.livekit.cloud"
-    const val LK_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDY4Mzc1NDgsImlzcyI6IkFQSXRvUmRLOVJYcUR0ViIsIm5hbWUiOiJxdWVzdCIsIm5iZiI6MTc0NjQ5MTk0OCwic3ViIjoicXVlc3QiLCJ2aWRlbyI6eyJjYW5VcGRhdGVPd25NZXRhZGF0YSI6dHJ1ZSwicm9vbSI6InN0ZXJlby1kZW1vIiwicm9vbUpvaW4iOnRydWV9fQ.vVHwaE80YX3JLjKIqPey_YUx377fUNK5ok0b1sYddaw"
+    // Set server URL and token here before running
+    const val LK_SERVER_URL = ""
+    const val LK_TOKEN = ""
 
     // TODO: These values should be set dynamically.
     const val STREAM_WIDTH = 3840f
