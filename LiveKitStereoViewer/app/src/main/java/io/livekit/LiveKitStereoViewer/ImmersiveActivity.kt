@@ -1,43 +1,57 @@
 package io.livekit.LiveKitStereoViewer
 
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.net.Uri
-import android.os.Bundle
+import android.util.Log
 import android.view.View
-import android.webkit.WebView
-import android.widget.TextView
 import com.meta.spatial.castinputforward.CastInputForwardFeature
 import com.meta.spatial.core.Entity
 import com.meta.spatial.core.Pose
+import com.meta.spatial.core.Quaternion
 import com.meta.spatial.core.SpatialFeature
 import com.meta.spatial.core.Vector3
 import com.meta.spatial.datamodelinspector.DataModelInspectorFeature
 import com.meta.spatial.debugtools.HotReloadFeature
-import com.meta.spatial.okhttp3.OkHttpAssetFetcher
 import com.meta.spatial.ovrmetrics.OVRMetricsDataModel
 import com.meta.spatial.ovrmetrics.OVRMetricsFeature
 import com.meta.spatial.runtime.LayerConfig
-import com.meta.spatial.runtime.NetworkedAssetLoader
-import com.meta.spatial.runtime.SceneMaterial
+import com.meta.spatial.runtime.StereoMode
 import com.meta.spatial.toolkit.AppSystemActivity
+import com.meta.spatial.toolkit.Grabbable
 import com.meta.spatial.toolkit.Material
 import com.meta.spatial.toolkit.Mesh
 import com.meta.spatial.toolkit.PanelRegistration
 import com.meta.spatial.toolkit.Transform
+import com.meta.spatial.toolkit.createPanelEntity
 import com.meta.spatial.vr.VRFeature
-import java.io.File
+import io.livekit.android.LiveKit
+import io.livekit.android.events.RoomEvent
+import io.livekit.android.events.collect
+import io.livekit.android.renderer.SurfaceViewRenderer
+import io.livekit.android.room.Room
+import io.livekit.android.room.track.VideoTrack
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
-// default activity
 class ImmersiveActivity : AppSystemActivity() {
-  private var gltfxEntity: Entity? = null
+
   private val activityScope = CoroutineScope(Dispatchers.Main)
+  private lateinit var room: Room
+
+  private lateinit var renderer: SurfaceViewRenderer
+  private var videoTrackSid: String? = null
+
+  private companion object {
+    const val TAG = "LiveKitStereoViewer"
+
+    const val LK_SERVER_URL = "wss://test-kfa415ta.livekit.cloud"
+    const val LK_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDY4Mzc1NDgsImlzcyI6IkFQSXRvUmRLOVJYcUR0ViIsIm5hbWUiOiJxdWVzdCIsIm5iZiI6MTc0NjQ5MTk0OCwic3ViIjoicXVlc3QiLCJ2aWRlbyI6eyJjYW5VcGRhdGVPd25NZXRhZGF0YSI6dHJ1ZSwicm9vbSI6InN0ZXJlby1kZW1vIiwicm9vbUpvaW4iOnRydWV9fQ.vVHwaE80YX3JLjKIqPey_YUx377fUNK5ok0b1sYddaw"
+
+    // TODO: These values should be set dynamically.
+    const val STREAM_WIDTH = 3840f
+    const val STREAM_HEIGHT = 1080f
+    val STREAM_STEREO_MODE = StereoMode.LeftRight
+  }
 
   override fun registerFeatures(): List<SpatialFeature> {
     val features = mutableListOf<SpatialFeature>(VRFeature(this))
@@ -50,90 +64,92 @@ class ImmersiveActivity : AppSystemActivity() {
     return features
   }
 
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    NetworkedAssetLoader.init(
-        File(applicationContext.getCacheDir().canonicalPath), OkHttpAssetFetcher())
-
-    // wait for GLXF to load before accessing nodes inside it
-    loadGLXF().invokeOnCompletion {
-      // get the environment mesh from Cosmo and set it to use an unlit shader.
-      val composition = glXFManager.getGLXFInfo("example_key_name")
-      val environmentEntity: Entity? = composition.getNodeByName("Environment").entity
-      val environmentMesh = environmentEntity?.getComponent<Mesh>()
-      environmentMesh?.defaultShaderOverride = SceneMaterial.UNLIT_SHADER
-      environmentEntity?.setComponent(environmentMesh!!)
-    }
-  }
-
   override fun onSceneReady() {
     super.onSceneReady()
-
-    scene.setLightingEnvironment(
-        ambientColor = Vector3(0f),
-        sunColor = Vector3(7.0f, 7.0f, 7.0f),
-        sunDirection = -Vector3(1.0f, 3.0f, -2.0f),
-        environmentIntensity = 0.3f)
-    scene.updateIBLEnvironment("environment.env")
-
     scene.setViewOrigin(0.0f, 0.0f, 2.0f, 180.0f)
-
     Entity.create(
-        listOf(
-            Mesh(Uri.parse("mesh://skybox")),
-            Material().apply {
-              baseTextureAndroidResourceId = R.drawable.skydome
-              unlit = true // Prevent scene lighting from affecting the skybox
-            },
-            Transform(Pose(Vector3(x = 0f, y = 0f, z = 0f)))))
+      listOf(
+        Mesh(Uri.parse("mesh://skybox")),
+        Material().apply {
+          baseTextureAndroidResourceId = R.drawable.skydome
+          unlit = true // Prevent scene lighting from affecting the skybox
+        },
+        Transform(Pose(Vector3(x = 0f, y = 0f, z = 0f)))
+      )
+    )
+    Entity.createPanelEntity(
+      R.layout.renderer,
+      Transform(Pose(Vector3(0.0f, 1.7f, 1f), Quaternion(180f, 0f, 180f))),
+      Grabbable()
+    )
   }
 
   override fun registerPanels(): List<PanelRegistration> {
     return listOf(
-        // Registering light-weight views panel
-        PanelRegistration(R.layout.ui_example) {
-          config {
-            themeResourceId = R.style.PanelAppThemeTransparent
-            includeGlass = false
-            layerConfig = LayerConfig()
-            enableTransparent = true
-          }
-          panel {
-            val webView = rootView?.findViewById<WebView>(R.id.web_view) ?: return@panel
-            val textView = rootView?.findViewById<TextView>(R.id.text_view) ?: return@panel
-            val webSettings = webView.settings
-            webSettings.javaScriptEnabled = true
-            webSettings.mediaPlaybackRequiresUserGesture = false
-            val receiver =
-                object : BroadcastReceiver() {
-                  override fun onReceive(context: Context, intent: Intent) {
-                    val message = intent.getStringExtra("webviewURI") ?: return
-                    textView.visibility = View.GONE
-                    webView.visibility = View.VISIBLE
-                    webView.loadUrl(message)
-                  }
-                }
-            registerReceiver(receiver, IntentFilter("io.livekit.PLAY_VIDEO"))
-          }
-        },
-        // Registering Activity-based compose panel
-        PanelRegistration(R.id.panel_activity) {
-          activityClass = PanelActivity::class.java
-          config {
-            includeGlass = false
-            layerConfig = LayerConfig()
-            enableTransparent = true
-          }
-        })
+      PanelRegistration(R.layout.renderer) {
+        config {
+          layoutWidthInPx = STREAM_WIDTH.toInt()
+          layoutHeightInPx = STREAM_HEIGHT.toInt()
+          width = 1f
+          height = STREAM_HEIGHT / (STREAM_WIDTH / 2) // Assuming LR layout
+          stereoMode = STREAM_STEREO_MODE
+          themeResourceId = R.style.PanelAppThemeTransparent
+          includeGlass = false
+          layerConfig = LayerConfig()
+          enableTransparent = true
+        }
+        panel {
+          renderer = rootView?.findViewById<SurfaceViewRenderer>(R.id.renderer) ?: return@panel
+          room = LiveKit.create(applicationContext)
+          room.initVideoRenderer(renderer)
+          connectToRoom()
+        }
+      }
+    )
   }
 
-  private fun loadGLXF(): Job {
-    gltfxEntity = Entity.create()
-    return activityScope.launch {
-      glXFManager.inflateGLXF(
-          Uri.parse("apk:///scenes/Composition.glxf"),
-          rootEntity = gltfxEntity!!,
-          keyName = "example_key_name")
+  private fun connectToRoom() {
+    activityScope.launch {
+      launch {
+        room.events.collect { event ->
+          when (event) {
+            is RoomEvent.TrackSubscribed -> onTrackSubscribed(event)
+            is RoomEvent.TrackUnsubscribed -> onTrackUnsubscribed(event)
+            else -> {}
+          }
+        }
+      }
+      try {
+        if (LK_SERVER_URL.isEmpty() || LK_TOKEN.isEmpty()) {
+          Log.e(TAG, "Server URL and token must be set")
+          return@launch
+        }
+        room.connect(LK_SERVER_URL, LK_TOKEN)
+        Log.i(TAG, "Connected");
+      } catch (e: Exception) {
+        Log.e(TAG, "Failed to connect to room", e)
+      }
     }
+  }
+
+  private fun onTrackSubscribed(event: RoomEvent.TrackSubscribed) {
+    val track = event.track
+    if (track !is VideoTrack) return
+    if (videoTrackSid != null) {
+      Log.w(TAG, "Already subscribed to video track")
+      return
+    }
+    Log.i(TAG, "Subscribed to video track")
+    videoTrackSid = track.sid
+    track.addRenderer(renderer)
+    renderer.visibility = View.VISIBLE
+  }
+
+  private fun onTrackUnsubscribed(event: RoomEvent.TrackUnsubscribed) {
+    val track = event.track
+    if (track.sid != videoTrackSid || track !is VideoTrack) return
+    Log.i(TAG, "Unsubscribed from video track")
+    videoTrackSid = null
+    renderer.visibility = View.GONE
   }
 }

@@ -1,4 +1,5 @@
 [versions]
+livekitAndroid = "2.14.1"
 spatialsdk = "0.6.0"
 agp = "8.5.0"
 kotlin = "2.0.20"
@@ -12,6 +13,7 @@ composeBom = "2024.09.03"
 
 [libraries]
 # Meta Spatial SDK Libraries
+livekit-android = { module = "io.livekit:livekit-android", version.ref = "livekitAndroid" }
 meta-spatial-sdk-base = { group = "com.meta.spatial", name = "meta-spatial-sdk", version.ref = "spatialsdk" }
 meta-spatial-sdk-vr = { group = "com.meta.spatial", name = "meta-spatial-sdk-vr", version.ref = "spatialsdk" }
 meta-spatial-sdk-animation = { group = "com.meta.spatial", name = "meta-spatial-sdk-animation", version.ref = "spatialsdk" }

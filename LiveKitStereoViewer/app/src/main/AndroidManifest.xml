@@ -58,7 +58,10 @@
   <!-- Volume Control -->
   <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
-  <application android:allowBackup="false" android:label="LiveKitStereoViewer">
+  <application
+      android:allowBackup="false"
+      android:label="LiveKitStereoViewer"
+      android:usesCleartextTraffic="true">
     <meta-data
       android:name="com.oculus.supportedDevices"
       android:value="quest2|questpro|quest3"
@@ -84,11 +87,11 @@
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
     </activity>
-    <activity
-      android:name="io.livekit.LiveKitStereoViewer.PanelActivity"
-      android:allowEmbedded="true"
-      android:theme="@style/Theme.Transparent"
-      android:exported="true"
-    />
+<!--    <activity-->
+<!--      android:name="io.livekit.LiveKitStereoViewer.PanelActivity"-->
+<!--      android:allowEmbedded="true"-->
+<!--      android:theme="@style/Theme.Transparent"-->
+<!--      android:exported="true"-->
+<!--    />-->
   </application>
 </manifest>

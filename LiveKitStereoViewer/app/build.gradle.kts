@@ -73,6 +73,9 @@ dependencies {
   androidTestImplementation(libs.androidx.ui.test.junit4)
   debugImplementation(libs.androidx.ui.tooling)
   debugImplementation(libs.androidx.ui.test.manifest)
+
+  // LiveKit
+  implementation("io.livekit:livekit-android:2.14.1")
 }
 
 afterEvaluate { tasks.named("assembleDebug") { dependsOn("export") } }
