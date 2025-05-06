@@ -6,6 +6,7 @@ This repository includes a minimal stereo viewer application for Meta Quest buil
 1. Open project root in Android Studio
 2. Set `LK_SERVER` and `LK_TOKEN` in  [*ImmersiveActivity.kt*](/LiveKitStereoViewer/app/src/main/java/io/livekit/LiveKitStereoViewer/ImmersiveActivity.kt)
 3. Build and run on device
+
 When run, a viewer panel will appear in the immersive environment. Once a stereoscopic video track is published by a remote participant, it will be displayed on the panel. See the following section for setting up ingress to get a video to display.
 
 ## Ingress
