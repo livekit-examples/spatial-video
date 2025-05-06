@@ -1,0 +1,8 @@
+{
+    "input_type": "URL_INPUT",
+    "name": "stereo-media",
+    "room_name": "stereo-demo",
+    "participant_identity": "stereo-publisher-id",
+    "participant_name": "stereo-publisher",
+    "url": "https://drive.google.com/uc?id=1DqNowRNXLK_HQ2ilgAVU6BaF3qGp0o4j"
+}
