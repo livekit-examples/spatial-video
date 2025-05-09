@@ -1,4 +1,9 @@
-# Spatial Video Demos
+# Stereo Video Demo
+
+Basic example of streaming video from a stereoscopic camera to Meta Quest using LiveKit.
+
+> [!IMPORTANT]
+> This repository contains large files stored with Git LFS; ensure Git LFS is installed on your system prior to cloning the repository.
 
 ## Stereo Viewer
 
