@@ -8,36 +8,41 @@ Basic example of streaming video from a stereoscopic camera to Meta Quest using 
 ## Stereo Viewer
 
 This repository includes a minimal stereo viewer application for Meta Quest built with the [Spatial SDK](https://developers.meta.com/horizon/develop/spatial-sdk). To get started:
-1. Open project root in Android Studio
-2. Set `LK_SERVER` and `LK_TOKEN` in  [*ImmersiveActivity.kt*](/LiveKitStereoViewer/app/src/main/java/io/livekit/LiveKitStereoViewer/ImmersiveActivity.kt)
+1. Open project root in Android Studio ([*LiveKitStereoViewer/*](/LiveKitStereoViewer/))
+2. Set `LK_SERVER` and `LK_TOKEN` in  [*ImmersiveActivity.kt*](/LiveKitStereoViewer/app/src/main/java/io/livekit/LiveKitStereoViewer/ImmersiveActivity.kt).
 3. Build and run on device
 
 When run, a viewer panel will appear in the immersive environment. Once a stereoscopic video track is published by a remote participant, it will be displayed on the panel. See the following section for setting up ingress to get a video to display.
 
-## Ingress
-If not already familiar with ingress, please begin by reading [Ingress Overview](https://docs.livekit.io/home/ingress/overview/) from the LiveKit docs.
+## Video Source
+
+Currently, the viewer expects to receive a side-by-side video stream with a resolution of 3840x1080 (1920x1080 per eye)—this example will be updated in the future to demonstrate dynamic configuration and additional formats.
 
 ### Camera Input
-TODO:
+
+LiveKit supports ingestion of external live streams using [Ingress](https://docs.livekit.io/home/ingress/overview/). Please refer to the [Rover Teleop](https://github.com/livekit-examples/rover-teleop) demo for a concrete example of ingesting live camera input.
 
 ### Static Video
-For testing purposes, ingest a stereoscopic video from a static file:
 
-1. Make sure `LIVEKIT_URL`, `LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET` are set in the environment.
-2. Set the url property in `requests/static.json` to point to the video file to ingest (or use the default).
-3. Create the ingress:
+For testing purposes, you can ingest a stereoscopic video from a static file instead of from a live camera feed. With the [LiveKit CLI](https://docs.livekit.io/home/cli/cli-setup/) installed on your system, run the following command:
+
+```sh
+export LIVEKIT_URL=<your LiveKit server URL>
+export LIVEKIT_API_KEY=<your API Key>
+export LIVEKIT_API_SECRET=<your API Secret>
+
+lk room join --publish h264://drive.google.com/uc?id=1DqNowRNXLK_HQ2ilgAVU6BaF3qGp0o4j stereo-demo
 ```
-lk ingress create requests/static.json
-```
 
-### File hosting
+If using your own file, please note:
 
-The video file needs to be served from an HTTP server with the proper MIME type set in order for ingress to work. I used this procedure to host static video files using Google Drive for testing:
+- It will need to be hosted publicly on an HTTP server (see below).
+- If it is encoded with VP8 instead of h264, use the `vp8://` scheme instead.
 
-1. Upload media to Google Drive
-2. Share the file, set access to "Anyone with link". Copy the share URL
+### Quick hosting
+
+The video file needs to be served from an HTTP server with the proper MIME type set in order for ingress to work. For quick testing, the file can be hosted on Google Drive using this procedure:
+
+1. Upload video to Google Drive
+2. Share the video, set access to "Anyone with link". Copy the share URL
 3. The share URL will have the following format: `https://drive.google.com/file/d/<id>/view?usp=sharing`. Using the file's ID, rewrite the URL as follows: `https://drive.google.com/uc?id=<id>` for direct access.
-
-Here are a few examples I have already prepared:
-- Fish: https://drive.google.com/uc?id=1DrBMHqvQIoJkrOsDSQDhaWWc8v0X_1zl
-- Dog: https://drive.google.com/uc?id=1DqNowRNXLK_HQ2ilgAVU6BaF3qGp0o4j
