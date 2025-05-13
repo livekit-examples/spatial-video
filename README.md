@@ -31,7 +31,7 @@ export LIVEKIT_URL=<your LiveKit server URL>
 export LIVEKIT_API_KEY=<your API Key>
 export LIVEKIT_API_SECRET=<your API Secret>
 
-lk room join --publish h264://drive.google.com/uc?id=1DqNowRNXLK_HQ2ilgAVU6BaF3qGp0o4j stereo-demo
+lk room join --publish h264://drive.google.com/uc?id=1ENQQrTUcCqcP5xrDz6PjRwfq-_qHLetx stereo-demo
 ```
 
 If using your own file, please note:
